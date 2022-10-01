@@ -1,0 +1,6 @@
+# environment variables
+.env
+# NodeJs modules
+node_modules/
+# http requests
+tasks.http
