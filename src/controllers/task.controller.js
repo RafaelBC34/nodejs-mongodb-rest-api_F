@@ -1,4 +1,5 @@
 import Task from '../models/Tasks.js'
+import { getPagination } from '../libs/getPagination.js'
 
 
 export const findOneTask = async (req, res) => {
@@ -23,8 +24,23 @@ export const findOneTask = async (req, res) => {
 
 export const findAllTasks = async (req, res) => {
     try {
-        const tasks = await Task.find()
-        res.json(tasks)
+
+        const {page, size, title} = req.query
+
+        const condition = title ? {
+            title: {$regex: new RegExp(title), $options: "i"}
+        } : {}
+
+        const {limit, offset} = getPagination(page, size)
+
+        const data = await Task.paginate(condition, {offset, limit})
+        
+        res.json({
+            totalItems: data.totalDocs,
+            tasks: data.docs,
+            totalPages: data.totalPages,
+            currentPage: data.page - 1
+        })
 
     } catch (error) {
         res.status(500).json({
@@ -34,8 +50,25 @@ export const findAllTasks = async (req, res) => {
 }
 
 export const findAllDoneTasks = async (req, res) => {
-    const tasks = await Task.find({done: true})
-    res.json(tasks)
+    
+    try {
+        const tasks = await Task.find({done: true})
+
+        if (!tasks) {
+            return res
+                .status(404)
+                .json({
+                    message: 'No done tasks were found'
+                })
+        }
+
+        res.json(tasks)
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'Something went wrong when retrieving the tasks'
+        })
+    }
 }
 
 export const createTask = async (req, res) => {
@@ -61,8 +94,17 @@ export const createTask = async (req, res) => {
 }
 
 export const updateTask = async (req, res) => {
-    await Task.findByIdAndUpdate(req.params.id, req.body)
-    res.json({message: 'Task was updated successfully'})
+    const { id } = req.params
+
+    try {
+        await Task.findByIdAndUpdate(req.params.id, req.body)
+        res.json({message: `Task with id = ${id} was updated successfully`})
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'Something went wrong when updating the task'
+        })
+    }
 }
 
 export const deleteTask = async (req, res) => {

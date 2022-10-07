@@ -2,5 +2,7 @@
 .env
 # NodeJs modules
 node_modules/
+# babel compiled files
+dist/
 # http requests
 tasks.http
